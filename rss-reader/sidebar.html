@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSS Sources</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text-primary, #e7ecf3);
+        background: var(--bg-secondary, #1a1f2e);
+        font-family: var(--font-family, 'Inter', 'Segoe UI', Roboto, Arial, sans-serif);
+        font-size: 13px;
+      }
+
+      .wrap {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .header {
+        height: 46px;
+        padding: 0 10px;
+        border-bottom: 1px solid var(--border, #273345);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--bg-secondary, #1a1f2e);
+        gap: 8px;
+      }
+
+      .title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary, #e7ecf3);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .header-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .icon-btn {
+        width: 30px;
+        height: 30px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--text-muted, #9aa8bb);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .icon-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: var(--border, #2c3a4f);
+        color: var(--text-primary, #e7ecf3);
+      }
+
+      .icon-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .icon-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .icon-btn.is-active {
+        color: var(--accent, #7bb2ff);
+      }
+
+      .toolbar {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border, #273345);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .search-wrap {
+        position: relative;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 14px;
+        color: var(--text-muted, #9aa8bb);
+      }
+
+      .search-input {
+        width: 100%;
+        height: 32px;
+        border: 1px solid var(--border, #2b384d);
+        border-radius: 10px;
+        background: var(--bg-tertiary, rgba(255,255,255,0.03));
+        color: var(--text-primary, #e7ecf3);
+        padding: 0 28px 0 32px;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--accent, #62aaff);
+      }
+
+      .clear-search {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--text-muted, #9aa8bb);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .clear-search svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      .search-input:not(:placeholder-shown) + .clear-search {
+        display: inline-flex;
+      }
+
+      .filter-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .filter-button {
+        height: 30px;
+        border-radius: 8px;
+        border: 1px solid var(--border, #2b384d);
+        background: transparent;
+        color: var(--text-muted, #9aa8bb);
+        width: 30px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .filter-button svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .filter-select {
+        flex: 1;
+        height: 30px;
+        border: 1px solid var(--border, #2b384d);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-primary, #e7ecf3);
+        padding: 0 8px;
+        font-size: 12px;
+      }
+
+      .status {
+        min-height: 16px;
+        color: var(--text-muted, #9aa8bb);
+        font-size: 11px;
+      }
+
+      .add-panel {
+        display: none;
+        border-bottom: 1px solid var(--border, #273345);
+        padding: 8px;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .add-panel.open {
+        display: flex;
+      }
+
+      .input {
+        width: 100%;
+        min-height: 30px;
+        border: 1px solid var(--border, #2b384d);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-primary, #e7ecf3);
+        padding: 0 10px;
+      }
+
+      .add-actions {
+        display: flex;
+        gap: 6px;
+        width: 100%;
+      }
+
+      .add-actions .btn {
+        border: 1px solid var(--border, #2b384d);
+        background: transparent;
+        color: var(--text-muted, #9aa8bb);
+        border-radius: 999px;
+        height: 30px;
+        padding: 0 10px;
+        cursor: pointer;
+      }
+
+      .add-actions .btn.primary {
+        border-color: rgba(96, 170, 255, 0.6);
+        color: #dbeaff;
+      }
+
+      .add-error {
+        color: #ffb4b4;
+        font-size: 11px;
+        width: 100%;
+        display: none;
+      }
+
+      .add-error.visible {
+        display: block;
+      }
+
+      .source-list {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        padding: 8px;
+      }
+
+      .empty {
+        margin: 8px;
+        border: 1px dashed var(--border, #273345);
+        border-radius: 10px;
+        padding: 10px;
+        color: var(--text-muted, #9aa8bb);
+        font-size: 12px;
+      }
+
+      .empty button {
+        margin-top: 6px;
+        border: 1px solid var(--border, #2b384d);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--text-muted, #9aa8bb);
+        height: 26px;
+        padding: 0 8px;
+        cursor: pointer;
+      }
+
+      .source-card {
+        border: 1px solid var(--border, #273345);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 8px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .source-card.active {
+        border-color: rgba(96, 170, 255, 0.9);
+        background: rgba(96, 170, 255, 0.12);
+      }
+
+      .source-main {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        text-align: left;
+        color: var(--text-primary, #e7ecf3);
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+        padding: 10px;
+        cursor: pointer;
+      }
+
+      .source-main:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .source-title {
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+
+      .source-url {
+        font-size: 11px;
+        color: var(--text-muted, #9aa8bb);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .source-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .source-tools {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .source-tool-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-muted, #9aa8bb);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .source-tool-btn:hover {
+        border-color: var(--border, #2b384d);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary, #e7ecf3);
+      }
+
+      .source-tool-btn svg {
+        width: 13px;
+        height: 13px;
+      }
+
+      .source-tool-btn.error {
+        color: #ffb4b4;
+      }
+
+      .source-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        color: var(--text-muted, #9aa8bb);
+        gap: 8px;
+      }
+
+      .error-badge {
+        color: #ffd0d0;
+      }
+
+      .error-strip {
+        padding: 6px 8px;
+        font-size: 11px;
+        color: #ffaaaa;
+        border-top: 1px solid var(--border, #273345);
+      }
+
+      .confirm-strip {
+        padding: 8px 10px;
+        border-top: 1px solid var(--border, #273345);
+        background: rgba(255, 80, 80, 0.08);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-primary, #e7ecf3);
+      }
+
+      .confirm-strip span {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .confirm-strip button {
+        height: 24px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border, #2b384d);
+        background: transparent;
+        color: var(--text-muted, #9aa8bb);
+        font-size: 11px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .confirm-strip .confirm-yes {
+        border-color: rgba(255, 100, 100, 0.6);
+        color: #ffb4b4;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .is-spinning {
+        animation: spin 1s linear infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="header">
+        <div class="title">RSS Sources</div>
+        <div class="header-actions">
+          <button id="addSourceBtn" class="icon-btn" title="Add RSS source" aria-label="Add RSS source">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+          <button id="refreshAllBtn" class="icon-btn" title="Refresh all sources" aria-label="Refresh all sources">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 2v6h-6" />
+              <path d="M3 12a9 9 0 0 1 15.1-6.4L21 8" />
+              <path d="M3 22v-6h6" />
+              <path d="M21 12a9 9 0 0 1-15.1 6.4L3 16" />
+            </svg>
+          </button>
+          <button id="filterToggleBtn" class="icon-btn" title="Filter" aria-label="Filter sources">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 3H2l8 9.46V19l4 2v-6.54L22 3Z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input id="searchInput" class="search-input" type="text" placeholder="Search RSS sources" />
+          <button id="clearSearchBtn" class="clear-search" title="Clear search" aria-label="Clear search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="filter-row">
+          <label class="filter-button" title="Filter mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2.5 8h19" />
+              <path d="M6.5 16h11" />
+              <path d="M10.5 12h3" />
+            </svg>
+          </label>
+          <select id="filterSelect" class="filter-select" aria-label="Filter sources">
+            <option value="all">All sources</option>
+            <option value="unread">Unread items</option>
+            <option value="error">Needs attention</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <div id="addPanel" class="add-panel">
+        <input id="sourceTitleInput" class="input" type="text" placeholder="Source name (optional)" />
+        <input id="sourceUrlInput" class="input" type="text" placeholder="https://example.com/rss.xml" />
+        <div id="addError" class="add-error"></div>
+        <div class="add-actions">
+          <button id="addConfirmBtn" class="btn primary" type="button">Add Source</button>
+          <button id="addCancelBtn" class="btn" type="button">Cancel</button>
+        </div>
+      </div>
+
+      <div id="sourceList" class="source-list"></div>
+    </div>
+
+    <script src="rss-core.js"></script>
+    <script>
+      (() => {
+        const {
+          STORAGE_KEYS, getAPI, waitForAPI, showToast,
+          broadcast, onBroadcast,
+          initStorage, refreshStorage, readKey, writeKey, writeKeys, isStorageAvailable,
+          escapeHtml, toDateText, uuid,
+          canonicalizeUrl, cleanLabel,
+          fetchFeedText, parseFeed, normalizeSourceList,
+        } = window.RSSCore;
+
+        const addSourceBtn = document.getElementById('addSourceBtn');
+        const refreshAllBtn = document.getElementById('refreshAllBtn');
+        const filterToggleBtn = document.getElementById('filterToggleBtn');
+        const filterSelect = document.getElementById('filterSelect');
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const statusEl = document.getElementById('status');
+        const sourceListEl = document.getElementById('sourceList');
+        const addPanel = document.getElementById('addPanel');
+        const sourceTitleInput = document.getElementById('sourceTitleInput');
+        const sourceUrlInput = document.getElementById('sourceUrlInput');
+        const addError = document.getElementById('addError');
+        const addConfirmBtn = document.getElementById('addConfirmBtn');
+        const addCancelBtn = document.getElementById('addCancelBtn');
+
+        const state = {
+          sources: [],
+          cache: {},
+          read: {},
+          activeSourceId: null,
+          filter: 'all',
+          search: '',
+          addPanelOpen: false,
+          isRefreshingAll: false,
+        };
+
+        // --- Persistence helpers ---
+
+        async function persist() {
+          await writeKeys({
+            [STORAGE_KEYS.SOURCES]: state.sources,
+            [STORAGE_KEYS.CACHE]: state.cache,
+            [STORAGE_KEYS.READ]: state.read,
+            [STORAGE_KEYS.ACTIVE]: state.activeSourceId,
+          });
+        }
+
+        function commitAndRender() {
+          void persist();
+          broadcast();
+          render();
+        }
+
+        async function commitAndRenderAsync() {
+          await persist();
+          broadcast();
+          render();
+        }
+
+        // --- Source operations ---
+
+        function getUnreadCount(source) {
+          const cached = state.cache[source.id];
+          if (!cached?.items?.length) return 0;
+          const seen = new Set(state.read[source.id] || []);
+          return cached.items.filter((e) => !seen.has(e.id)).length;
+        }
+
+        async function refreshSource(source) {
+          try {
+            const xml = await fetchFeedText(source.url);
+            const items = parseFeed(xml, source.url);
+            state.cache[source.id] = { at: Date.now(), items };
+            source.lastError = null;
+            source.lastRefreshed = Date.now();
+          } catch (err) {
+            source.lastError = err?.message || 'Failed to refresh.';
+            source.lastRefreshed = Date.now();
+          }
+        }
+
+        async function refreshAllSources() {
+          if (!state.sources.length) {
+            statusEl.textContent = 'No RSS sources yet.';
+            return;
+          }
+
+          state.isRefreshingAll = true;
+          refreshAllBtn.disabled = true;
+          refreshAllBtn.classList.add('is-spinning');
+          statusEl.textContent = 'Refreshing all sources...';
+
+          try {
+            await Promise.all(state.sources.map((s) => refreshSource(s)));
+            statusEl.textContent = 'Refresh complete.';
+          } finally {
+            state.isRefreshingAll = false;
+            refreshAllBtn.disabled = false;
+            refreshAllBtn.classList.remove('is-spinning');
+            commitAndRender();
+            setTimeout(() => {
+              if (state.search || state.filter !== 'all') statusEl.textContent = '';
+            }, 900);
+          }
+        }
+
+        async function openSource(source) {
+          state.activeSourceId = source.id;
+          commitAndRender();
+
+          if (!state.cache[source.id]?.items?.length) {
+            statusEl.textContent = `Refreshing ${source.title}...`;
+            refreshSource(source).then(() => commitAndRender());
+          }
+
+          await waitForAPI();
+          const api = getAPI();
+          const openTab = api?.tabs?.openExtensionTab || api?.tabs?.open;
+          if (!openTab) {
+            showToast('RSS tab API unavailable.', 'warning');
+            return;
+          }
+
+          openTab({
+            entrypoint: 'reader.html',
+            tabId: `rss-reader-${source.id}`,
+            title: `RSS · ${source.title}`,
+            query: { sourceId: source.id, sourceUrl: source.url, sourceTitle: source.title },
+          }).catch(() => showToast('Could not open RSS reader tab.', 'error'));
+        }
+
+        async function removeSource(source, cardEl) {
+          const api = getAPI();
+
+          // Prefer platform ui.confirm() — shows app-level dialog
+          if (api?.ui?.confirm) {
+            try {
+              const confirmed = await api.ui.confirm({
+                title: 'Remove RSS Source',
+                message: `Remove "${source.title}"? This cannot be undone.`,
+                confirmLabel: 'Remove',
+                variant: 'danger',
+              });
+              if (confirmed) doRemoveSource(source);
+              return;
+            } catch { /* fall through to inline strip */ }
+          }
+
+          // Fallback: inline confirmation strip (for environments without ui.confirm)
+          if (!cardEl) {
+            doRemoveSource(source);
+            return;
+          }
+
+          if (cardEl.querySelector('.confirm-strip')) return;
+
+          const strip = document.createElement('div');
+          strip.className = 'confirm-strip';
+          strip.innerHTML = `
+            <span>Remove <strong>${escapeHtml(source.title)}</strong>?</span>
+            <button class="confirm-yes" type="button">Remove</button>
+            <button class="confirm-no" type="button">Cancel</button>
+          `;
+          strip.querySelector('.confirm-yes').addEventListener('click', (e) => {
+            e.stopPropagation();
+            doRemoveSource(source);
+          });
+          strip.querySelector('.confirm-no').addEventListener('click', (e) => {
+            e.stopPropagation();
+            strip.remove();
+          });
+          cardEl.appendChild(strip);
+        }
+
+        function doRemoveSource(source, options = {}) {
+          const shouldNotify = options.notify !== false;
+          state.sources = state.sources.filter((s) => s.id !== source.id);
+          delete state.cache[source.id];
+          delete state.read[source.id];
+
+          if (state.activeSourceId === source.id) {
+            state.activeSourceId = state.sources[0]?.id || null;
+          }
+
+          commitAndRender();
+          if (shouldNotify) {
+            showToast(`Removed ${source.title}`, 'success');
+          }
+        }
+
+        // --- Add panel ---
+
+        function setAddError(msg) {
+          addError.textContent = msg || '';
+          addError.classList.toggle('visible', Boolean(msg));
+        }
+
+        function setAddPanel(open) {
+          state.addPanelOpen = open;
+          addPanel.classList.toggle('open', open);
+          if (!open) {
+            sourceTitleInput.value = '';
+            sourceUrlInput.value = '';
+            setAddError('');
+            return;
+          }
+          sourceTitleInput.focus();
+        }
+
+        function addSourceFromForm() {
+          const url = canonicalizeUrl(sourceUrlInput.value);
+          if (!url) {
+            setAddError('Enter a valid RSS URL (https://...).');
+            return;
+          }
+
+          const existing = state.sources.find((s) => s.url === url);
+          if (existing) {
+            showToast('That source already exists.', 'info');
+            openSource(existing);
+            setAddPanel(false);
+            return;
+          }
+
+          const label = cleanLabel(sourceTitleInput.value);
+          const title = label || url.replace(/^https?:\/\//, '').split('/')[0];
+
+          const source = {
+            id: uuid('source'),
+            title,
+            url,
+            createdAt: Date.now(),
+            lastRefreshed: 0,
+            lastError: null,
+          };
+
+          state.sources.push(source);
+          setAddPanel(false);
+          commitAndRender();
+          showToast(`Added ${title}`, 'success');
+
+          refreshSource(source).finally(() => {
+            commitAndRender();
+            openSource(source);
+          });
+        }
+
+        // --- AI handlers (iframe CAM tools) ---
+
+        function asObject(value) {
+          return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        }
+
+        function toStringArray(value) {
+          return Array.isArray(value) ? value.filter((v) => typeof v === 'string') : [];
+        }
+
+        function clampInt(raw, fallback, min, max) {
+          const n = Number(raw);
+          if (!Number.isFinite(n)) return fallback;
+          return Math.max(min, Math.min(max, Math.floor(n)));
+        }
+
+        function getSourceSummary(source) {
+          return {
+            id: source.id,
+            title: source.title,
+            url: source.url,
+            createdAt: source.createdAt,
+            lastRefreshed: source.lastRefreshed,
+            lastError: source.lastError || null,
+            unread: getUnreadCount(source),
+          };
+        }
+
+        function findSourceByIdOrUrl(params) {
+          const sourceId = typeof params.sourceId === 'string' ? params.sourceId.trim() : '';
+          const rawUrl = typeof params.url === 'string' ? params.url.trim() : '';
+          const canonical = rawUrl ? canonicalizeUrl(rawUrl) : '';
+          return (
+            state.sources.find((s) => s.id === sourceId) ||
+            state.sources.find((s) => canonical && s.url === canonical) ||
+            null
+          );
+        }
+
+        async function aiAddSource(rawParams) {
+          const params = asObject(rawParams);
+          const url = canonicalizeUrl(params.url);
+          if (!url) {
+            throw new Error('addSource requires a valid "url".');
+          }
+
+          const existing = state.sources.find((s) => s.url === url);
+          if (existing) {
+            return { added: false, reason: 'already_exists', source: getSourceSummary(existing) };
+          }
+
+          const label = cleanLabel(params.title);
+          const source = {
+            id: uuid('source'),
+            title: label || url.replace(/^https?:\/\//, '').split('/')[0],
+            url,
+            createdAt: Date.now(),
+            lastRefreshed: 0,
+            lastError: null,
+          };
+
+          state.sources.push(source);
+          await commitAndRenderAsync();
+
+          const shouldRefresh = params.refresh !== false;
+          if (shouldRefresh) {
+            await refreshSource(source);
+            await commitAndRenderAsync();
+          }
+
+          return {
+            added: true,
+            refreshed: shouldRefresh,
+            source: getSourceSummary(source),
+          };
+        }
+
+        async function aiRemoveSource(rawParams) {
+          const params = asObject(rawParams);
+          const source = findSourceByIdOrUrl(params);
+          if (!source) {
+            return { removed: false, reason: 'not_found' };
+          }
+          doRemoveSource(source, { notify: false });
+          return { removed: true, sourceId: source.id };
+        }
+
+        async function aiRefreshSources(rawParams) {
+          const params = asObject(rawParams);
+          const sourceIds = toStringArray(params.sourceIds);
+          const targetSet = sourceIds.length ? new Set(sourceIds) : null;
+          const targets = targetSet
+            ? state.sources.filter((s) => targetSet.has(s.id))
+            : [...state.sources];
+
+          if (!targets.length) {
+            return { refreshed: 0, failed: 0, sources: [] };
+          }
+
+          await Promise.all(targets.map((source) => refreshSource(source)));
+          await commitAndRenderAsync();
+
+          const summaries = targets.map((source) => getSourceSummary(source));
+          const failed = summaries.filter((source) => Boolean(source.lastError)).length;
+          return {
+            refreshed: summaries.length - failed,
+            failed,
+            sources: summaries,
+          };
+        }
+
+        async function aiQueryArticles(rawParams) {
+          const params = asObject(rawParams);
+          const sourceIds = toStringArray(params.sourceIds);
+          const targetSet = sourceIds.length ? new Set(sourceIds) : null;
+          const unreadOnly = Boolean(params.unreadOnly);
+          const includeSummary = params.includeSummary !== false;
+          const query = typeof params.query === 'string' ? params.query.trim().toLowerCase() : '';
+          const limit = clampInt(params.limit, 25, 1, 100);
+
+          const rows = [];
+          for (const source of state.sources) {
+            if (targetSet && !targetSet.has(source.id)) continue;
+            const items = state.cache[source.id]?.items;
+            if (!Array.isArray(items)) continue;
+            const readSet = new Set(Array.isArray(state.read[source.id]) ? state.read[source.id] : []);
+
+            for (const item of items) {
+              if (!item || typeof item !== 'object') continue;
+              const id = typeof item.id === 'string' ? item.id : '';
+              if (!id) continue;
+              const title = typeof item.title === 'string' ? item.title : 'Untitled';
+              const link = typeof item.link === 'string' ? item.link : '';
+              const summary = typeof item.summary === 'string' ? item.summary : '';
+              const publishedAt = Number(item.publishedAt) || 0;
+              const unread = !readSet.has(id);
+
+              if (unreadOnly && !unread) continue;
+              if (query) {
+                const haystack = `${title}\n${summary}`.toLowerCase();
+                if (!haystack.includes(query)) continue;
+              }
+
+              rows.push({
+                id,
+                sourceId: source.id,
+                sourceTitle: source.title,
+                title,
+                link,
+                publishedAt,
+                unread,
+                ...(includeSummary ? { summary: summary.slice(0, 800) } : {}),
+              });
+            }
+          }
+
+          rows.sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
+          const total = rows.length;
+          const items = rows.slice(0, limit);
+
+          return {
+            items,
+            total,
+            truncated: total > items.length,
+          };
+        }
+
+        async function aiSetReadStatus(rawParams) {
+          const params = asObject(rawParams);
+          const defaultRead = params.read !== false;
+          const updates = Array.isArray(params.items) ? params.items : [];
+          let updated = 0;
+          let skipped = 0;
+
+          for (const update of updates) {
+            const row = asObject(update);
+            const sourceId = typeof row.sourceId === 'string' ? row.sourceId : '';
+            const itemId = typeof row.itemId === 'string' ? row.itemId : '';
+            if (!sourceId || !itemId) {
+              skipped += 1;
+              continue;
+            }
+
+            const nextRead = typeof row.read === 'boolean' ? row.read : defaultRead;
+            const current = Array.isArray(state.read[sourceId]) ? state.read[sourceId] : [];
+            const set = new Set(current);
+
+            if (nextRead) {
+              set.add(itemId);
+            } else {
+              set.delete(itemId);
+            }
+
+            state.read[sourceId] = Array.from(set);
+            updated += 1;
+          }
+
+          await commitAndRenderAsync();
+          return { updated, skipped };
+        }
+
+        async function registerAiHandlers() {
+          await waitForAPI();
+          const api = getAPI();
+          if (!api?.ai?.registerHandler) return;
+
+          api.ai.registerHandler('addSource', aiAddSource);
+          api.ai.registerHandler('removeSource', aiRemoveSource);
+          api.ai.registerHandler('refreshSources', aiRefreshSources);
+          api.ai.registerHandler('queryArticles', aiQueryArticles);
+          api.ai.registerHandler('setReadStatus', aiSetReadStatus);
+        }
+
+        // --- Rendering ---
+
+        function createSourceRow(source) {
+          const unread = getUnreadCount(source);
+          const row = document.createElement('div');
+          row.className = `source-card${state.activeSourceId === source.id ? ' active' : ''}`;
+
+          const main = document.createElement('div');
+          main.className = 'source-main';
+          main.setAttribute('role', 'button');
+          main.setAttribute('tabindex', '0');
+          main.innerHTML = `
+            <div class="source-head">
+              <div class="source-title">${escapeHtml(source.title)}</div>
+              <div class="source-tools">
+                <button class="source-tool-btn source-refresh-btn" type="button" title="Refresh ${escapeHtml(source.title)}" aria-label="Refresh source">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 2v6h-6" />
+                    <path d="M3 12a9 9 0 0 1 15.1-6.4L21 8" />
+                    <path d="M3 22v-6h6" />
+                    <path d="M21 12a9 9 0 0 1-15.1 6.4L3 16" />
+                  </svg>
+                </button>
+                <button class="source-tool-btn source-remove-btn" type="button" title="Remove ${escapeHtml(source.title)}" aria-label="Remove source">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4h8v2" />
+                    <path d="M19 6l-1 14H6L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                  </svg>
+                </button>
+                ${source.lastError ? `
+                <button class="source-tool-btn error source-error-btn" type="button" title="${escapeHtml(source.lastError)}" aria-label="Source error">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 9v4" />
+                    <path d="M12 17h.01" />
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  </svg>
+                </button>` : ''}
+              </div>
+            </div>
+            <div class="source-url">${escapeHtml(source.url)}</div>
+            <div class="source-meta">
+              <span>${toDateText(source.lastRefreshed)}</span>
+              <span class="${unread > 0 ? 'error-badge' : ''}">${unread > 0 ? `${unread} unread` : 'no unread'}</span>
+            </div>
+          `;
+
+          main.addEventListener('click', () => openSource(source));
+          main.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openSource(source);
+            }
+          });
+
+          main.querySelector('.source-refresh-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            statusEl.textContent = `Refreshing ${source.title}...`;
+            refreshSource(source).then(() => commitAndRender());
+          });
+
+          main.querySelector('.source-remove-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeSource(source, row);
+          });
+
+          row.appendChild(main);
+
+          if (source.lastError) {
+            const errText = document.createElement('div');
+            errText.className = 'error-strip';
+            errText.textContent = `Last error: ${source.lastError}`;
+            row.appendChild(errText);
+          }
+
+          return row;
+        }
+
+        function render() {
+          const query = state.search.toLowerCase().trim();
+          const items = [...state.sources]
+            .sort((a, b) => (b.lastRefreshed || 0) - (a.lastRefreshed || 0))
+            .filter((source) => {
+              const text = `${source.title} ${source.url}`.toLowerCase();
+              if (query && !text.includes(query)) return false;
+              if (state.filter === 'unread') return getUnreadCount(source) > 0;
+              if (state.filter === 'error') return Boolean(source.lastError);
+              return true;
+            });
+
+          filterToggleBtn.classList.toggle('is-active', state.filter !== 'all');
+          filterSelect.value = state.filter;
+
+          sourceListEl.innerHTML = '';
+
+          if (!items.length) {
+            if (state.sources.length > 0 && (query || state.filter !== 'all')) {
+              sourceListEl.innerHTML = `
+                <div class="empty">
+                  No RSS sources match this view.
+                  <div><button id="clearFilterBtn" type="button">Show all sources</button></div>
+                </div>
+              `;
+              document.getElementById('clearFilterBtn')?.addEventListener('click', () => {
+                state.search = '';
+                searchInput.value = '';
+                state.filter = 'all';
+                void writeKey(STORAGE_KEYS.FILTER, 'all');
+                render();
+              });
+              return;
+            }
+            return;
+          }
+
+          for (const source of items) {
+            sourceListEl.appendChild(createSourceRow(source));
+          }
+
+        }
+
+        // --- Init ---
+
+        async function hydrate() {
+          // Clear any leftover badge from previous versions
+          const api = getAPI();
+          if (api?.ui?.clearBadge) api.ui.clearBadge();
+
+          await initStorage();
+          await refreshStorage();
+
+          const raw = readKey(STORAGE_KEYS.SOURCES, []);
+          const cleaned = normalizeSourceList(raw);
+          const changed = JSON.stringify(cleaned) !== JSON.stringify(Array.isArray(raw) ? raw : []);
+
+          state.sources = cleaned;
+          state.cache = readKey(STORAGE_KEYS.CACHE, {});
+          state.read = readKey(STORAGE_KEYS.READ, {});
+          state.activeSourceId = readKey(STORAGE_KEYS.ACTIVE, null);
+
+          const storedFilter = readKey(STORAGE_KEYS.FILTER, 'all');
+          state.filter = ['all', 'unread', 'error'].includes(storedFilter) ? storedFilter : 'all';
+
+          if (state.activeSourceId && !state.sources.some((s) => s.id === state.activeSourceId)) {
+            state.activeSourceId = state.sources[0]?.id || null;
+          }
+
+          render();
+
+          if (changed) void persist();
+          if (!isStorageAvailable()) statusEl.textContent = 'Storage unavailable. Source list is session-only.';
+        }
+
+        // --- Event listeners ---
+
+        addSourceBtn.addEventListener('click', () => setAddPanel(!state.addPanelOpen));
+        addCancelBtn.addEventListener('click', () => setAddPanel(false));
+        addConfirmBtn.addEventListener('click', addSourceFromForm);
+        refreshAllBtn.addEventListener('click', refreshAllSources);
+
+        [sourceTitleInput, sourceUrlInput].forEach((el) => {
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); addSourceFromForm(); }
+          });
+        });
+
+        filterSelect.addEventListener('change', (e) => {
+          state.filter = e.target.value;
+          void writeKey(STORAGE_KEYS.FILTER, state.filter);
+          render();
+        });
+
+        searchInput.addEventListener('input', (e) => {
+          state.search = e.target.value || '';
+          render();
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+          searchInput.value = '';
+          state.search = '';
+          render();
+          searchInput.focus();
+        });
+
+        filterToggleBtn.addEventListener('click', () => {
+          filterToggleBtn.classList.toggle('is-active');
+          filterSelect.focus();
+        });
+
+        void registerAiHandlers();
+
+        // Cross-frame storage events (primary sync mechanism)
+        onBroadcast(() => void hydrate());
+
+        // Heartbeat: re-check read state from storage every 2s.
+        // Cross-frame events may not fire reliably in all sandboxed
+        // iframe configurations, so this ensures the sidebar stays
+        // in sync with reader tabs marking articles as read.
+        let lastReadSnapshot = '';
+        setInterval(async () => {
+          const api = getAPI();
+          if (!api?.storage?.get) return;
+          try {
+            const fresh = await api.storage.get(STORAGE_KEYS.READ);
+            const snap = JSON.stringify(fresh || {});
+            if (snap !== lastReadSnapshot) {
+              lastReadSnapshot = snap;
+              state.read = fresh || {};
+              render();
+            }
+          } catch { /* ignore */ }
+        }, 2000);
+
+        void hydrate().then(() => {
+          lastReadSnapshot = JSON.stringify(state.read);
+        });
+      })();
+    </script>
+  </body>
+</html>

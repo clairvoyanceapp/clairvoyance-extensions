@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Vault</title>
+<style>
+/* ================================================================== */
+/*  Reset & Base — matches Clairvoyance native sidebar                */
+/* ================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  background: var(--bg-secondary, #252526);
+  color: var(--text-primary, #cccccc);
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ================================================================== */
+/*  Layout — full-height flex column                                  */
+/* ================================================================== */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-secondary, #252526);
+}
+
+/* ================================================================== */
+/*  Workspace Header — px-4 py-3, border-b                           */
+/* ================================================================== */
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border, #3c3c3c);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.workspace-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  justify-content: flex-start;
+  padding: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #cccccc);
+  background: none;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 100ms;
+}
+
+.workspace-name:hover {
+  color: var(--accent, #007acc);
+}
+
+.workspace-name.is-static {
+  cursor: default;
+}
+
+.workspace-name.is-static:hover {
+  color: var(--text-primary, #cccccc);
+}
+
+.workspace-name .ws-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted, #858585);
+  transition: transform 150ms;
+}
+
+.workspace-name.is-static .ws-chevron {
+  display: none;
+}
+
+.workspace-name .ws-chevron.open {
+  transform: rotate(180deg);
+}
+
+.workspace-dropdown {
+  display: none;
+  position: absolute;
+  left: 16px;
+  top: 100%;
+  margin-top: 4px;
+  z-index: 50;
+  min-width: 200px;
+  max-width: min(300px, calc(100vw - 32px));
+  background: var(--bg-secondary, #252526);
+  border: 1px solid var(--border, #3c3c3c);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  padding: 4px 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.workspace-dropdown.visible { display: block; }
+
+.workspace-option {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 14px;
+  font-family: inherit;
+  background: none;
+  border: none;
+  color: var(--text-muted, #858585);
+  cursor: pointer;
+  transition: background-color 100ms, color 100ms;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-option:hover {
+  background: var(--bg-tertiary, #2d2d30);
+  color: var(--text-primary, #cccccc);
+}
+
+.workspace-option.active {
+  background: var(--bg-tertiary, #2d2d30);
+  color: var(--text-primary, #cccccc);
+  font-weight: 600;
+}
+
+.workspace-dropdown-empty {
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--text-muted, #858585);
+}
+
+/* ================================================================== */
+/*  Toolbar — px-3 py-2, border-b                                    */
+/* ================================================================== */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border, #3c3c3c);
+  flex-shrink: 0;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-label {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-primary, #cccccc);
+  margin-right: 4px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  color: var(--text-muted, #858585);
+  cursor: pointer;
+  transition: background-color 100ms, color 100ms;
+}
+
+.toolbar-btn:hover {
+  background: var(--bg-tertiary, #2d2d30);
+  color: var(--text-primary, #cccccc);
+}
+
+.toolbar-btn.active {
+  color: var(--accent, #007acc);
+  background: var(--bg-tertiary, #2d2d30);
+}
+
+.toolbar-btn svg { flex-shrink: 0; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.toolbar-btn.spinning svg {
+  display: block;
+  transform-origin: center center;
+  animation: spin 1s linear infinite;
+}
+
+/* ================================================================== */
+/*  Search Bar                                                        */
+/* ================================================================== */
+
+.search-bar {
+  display: none;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border, #3c3c3c);
+  flex-shrink: 0;
+}
+
+.search-bar.visible { display: block; }
+
+.search-input {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg-primary, #1e1e1e);
+  color: var(--text-primary, #cccccc);
+  border: 1px solid var(--border, #3c3c3c);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 150ms;
+}
+
+.search-input:focus {
+  border-color: var(--accent, #007acc);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted, #858585);
+}
+
+/* ================================================================== */
+/*  Filter Dropdown                                                   */
+/* ================================================================== */
+
+.filter-dropdown-anchor { position: relative; }
+
+.filter-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  z-index: 50;
+  min-width: 140px;
+  background: var(--bg-primary, #1e1e1e);
+  border: 1px solid var(--border, #3c3c3c);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  padding: 4px 0;
+}
+
+.filter-dropdown.visible { display: block; }
+
+.filter-option {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  text-align: left;
+  font-size: 14px;
+  font-family: inherit;
+  background: none;
+  border: none;
+  color: var(--text-secondary, #969696);
+  cursor: pointer;
+  transition: background-color 100ms, color 100ms;
+}
+
+.filter-option:hover {
+  background: var(--bg-tertiary, #2d2d30);
+}
+
+.filter-option.active {
+  color: var(--accent, #007acc);
+  background: var(--bg-secondary, #252526);
+}
+
+/* ================================================================== */
+/*  File Tree (List View)                                             */
+/* ================================================================== */
+
+.file-tree-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-muted, #858585) var(--bg-secondary, #252526);
+}
+
+/* Webkit scrollbar — matches native Files sidebar */
+.file-tree-container::-webkit-scrollbar { width: 14px; height: 14px; }
+.file-tree-container::-webkit-scrollbar-track {
+  background: var(--bg-secondary, #252526);
+  border-left: 1px solid var(--border, #3c3c3c);
+}
+.file-tree-container::-webkit-scrollbar-thumb {
+  background-color: var(--text-muted, #858585);
+  border-radius: 7px;
+  border: 3px solid var(--bg-secondary, #252526);
+  min-height: 40px;
+}
+.file-tree-container::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary, #969696);
+}
+.file-tree-container::-webkit-scrollbar-thumb:active {
+  background-color: var(--accent, #007acc);
+}
+
+/* ================================================================== */
+/*  Tree Item — py-1 px-2, gap-1, depth-based indent                 */
+/* ================================================================== */
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 100ms;
+  white-space: nowrap;
+}
+
+.tree-item:hover { background: var(--bg-tertiary, #2d2d30); }
+.tree-item.selected { background: var(--bg-tertiary, #2d2d30); }
+
+.tree-item .chevron {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--text-muted, #858585);
+  transition: transform 150ms;
+  width: 16px;
+  height: 16px;
+}
+
+.tree-item .chevron.expanded { transform: rotate(90deg); }
+.tree-item .chevron.hidden { visibility: hidden; }
+
+.tree-item .item-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.tree-item .item-name {
+  font-size: 14px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-muted, #858585);
+}
+
+.tree-item.selected .item-name { color: var(--text-primary, #cccccc); }
+.tree-item:hover .item-name { color: var(--text-primary, #cccccc); }
+
+/* Flat view items */
+.flat-item {
+  flex-wrap: wrap;
+}
+.flat-item-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
+}
+.flat-item-path {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--text-muted, #858585);
+  opacity: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ================================================================== */
+/*  Context Menu                                                      */
+/* ================================================================== */
+
+.context-menu {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  min-width: 160px;
+  background: var(--bg-secondary, #252526);
+  border: 1px solid var(--border, #3c3c3c);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  padding: 4px 0;
+}
+
+.context-menu.visible { display: block; }
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: none;
+  border: none;
+  color: var(--text-primary, #cccccc);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 100ms;
+}
+
+.context-menu-item:hover {
+  background: var(--bg-tertiary, #2d2d30);
+}
+
+.context-menu-separator {
+  margin: 4px 0;
+  border-top: 1px solid var(--border, #3c3c3c);
+}
+
+/* ================================================================== */
+/*  Empty State                                                       */
+/* ================================================================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 32px;
+  text-align: center;
+  color: var(--text-muted, #858585);
+}
+
+.empty-state .empty-icon {
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.empty-state .empty-icon svg {
+  width: 48px;
+  height: 48px;
+}
+
+.empty-state .empty-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--text-secondary, #969696);
+}
+
+.empty-state .empty-subtitle {
+  font-size: 12px;
+}
+
+/* ================================================================== */
+/*  Loading Spinner                                                   */
+/* ================================================================== */
+
+.loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted, #858585);
+}
+
+.loading-spinner svg {
+  display: block;
+  transform-origin: center center;
+  animation: spin 1s linear infinite;
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <!-- Workspace Header -->
+  <div class="workspace-header">
+    <button class="workspace-name" id="workspaceName">
+      <span id="workspaceLabel">No Workspace</span>
+      <svg class="ws-chevron" id="wsChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="workspace-dropdown" id="workspaceDropdown"></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span class="toolbar-label">Assets</span>
+    </div>
+    <div class="toolbar-right">
+      <button class="toolbar-btn" id="btnViewToggle" title="Toggle flat/tree view">${ICONS_PLACEHOLDER_LIST}</button>
+      <button class="toolbar-btn" id="btnSearch" title="Search">${ICONS_PLACEHOLDER_SEARCH}</button>
+      <button class="toolbar-btn" id="btnRefresh" title="Refresh">${ICONS_PLACEHOLDER_REFRESH}</button>
+      <div class="filter-dropdown-anchor">
+        <button class="toolbar-btn" id="btnFilter" title="Filter">${ICONS_PLACEHOLDER_FILTER}</button>
+        <div class="filter-dropdown" id="filterDropdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Bar (hidden by default) -->
+  <div class="search-bar" id="searchBar">
+    <input type="text" class="search-input" id="searchInput" placeholder="Search assets...">
+  </div>
+
+  <!-- File Tree (list view) -->
+  <div class="file-tree-container" id="fileTree"></div>
+
+  <!-- Context Menu -->
+  <div class="context-menu" id="contextMenu"></div>
+</div>
+
+<script src="core.js"></script>
+<script>
+(async () => {
+  /* ---------------------------------------------------------------- */
+  /*  State                                                           */
+  /* ---------------------------------------------------------------- */
+
+  let api;
+  let workspace = null;
+  let allFiles = [];          // Raw flat file list from API
+  let filteredFiles = [];     // After filter + search
+  let fileTree = [];          // Nested tree for list view
+  let expandedFolders = {};   // { relativePath: true }
+  let selectedPath = null;
+  let filterMode = 'all';     // 'all' | '3d' | 'texture' | 'image'
+  let sidebarViewMode = 'tree'; // 'tree' | 'flat'
+  let searchQuery = '';
+  let isLoading = false;
+  let treeNeedsRebuild = true;
+  let searchApplyTimer = null;
+  let assetIndexLoaded = false;
+  let treeModeLoading = false;
+
+  const SEARCH_APPLY_DEBOUNCE_MS = 120;
+
+  /** Maps relativePath → node data object (file or folder) for event delegation lookup */
+  const nodeDataMap = new Map();
+  /** Maps relativePath → DOM element for incremental updates */
+  const domNodeMap = new Map();
+
+  /* ---------------------------------------------------------------- */
+  /*  DOM refs                                                        */
+  /* ---------------------------------------------------------------- */
+
+  const $workspaceName = document.getElementById('workspaceName');
+  const $workspaceLabel = document.getElementById('workspaceLabel');
+  const $wsChevron = document.getElementById('wsChevron');
+  const $workspaceDropdown = document.getElementById('workspaceDropdown');
+  const $fileTreeEl = document.getElementById('fileTree');
+  const $searchBar = document.getElementById('searchBar');
+  const $searchInput = document.getElementById('searchInput');
+  const $filterDropdown = document.getElementById('filterDropdown');
+  const $contextMenu = document.getElementById('contextMenu');
+  const $btnSearch = document.getElementById('btnSearch');
+  const $btnRefresh = document.getElementById('btnRefresh');
+  const $btnFilter = document.getElementById('btnFilter');
+
+  /* ---------------------------------------------------------------- */
+  /*  Inject Icons (after core.js loads)                              */
+  /* ---------------------------------------------------------------- */
+
+  const $btnViewToggle = document.getElementById('btnViewToggle');
+  $btnViewToggle.innerHTML = ICONS.list;
+  $btnSearch.innerHTML = ICONS.search;
+  $btnRefresh.innerHTML = ICONS.refresh;
+  $btnFilter.innerHTML = ICONS.filter;
+
+  /* ---------------------------------------------------------------- */
+  /*  Delegated Event Handlers on File Tree                           */
+  /* ---------------------------------------------------------------- */
+
+  $fileTreeEl.addEventListener('click', (e) => {
+    const itemEl = e.target.closest('.tree-item');
+    if (!itemEl) return;
+    e.stopPropagation();
+    const path = itemEl.dataset.path;
+    const node = nodeDataMap.get(path);
+    if (!node) return;
+    if (node.type === 'directory' && e.target.closest('.chevron')) {
+      toggleFolder(node.relativePath);
+      return;
+    }
+    void openSelection(node);
+  });
+
+  $fileTreeEl.addEventListener('contextmenu', (e) => {
+    const itemEl = e.target.closest('.tree-item');
+    if (!itemEl) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const path = itemEl.dataset.path;
+    const node = nodeDataMap.get(path);
+    if (!node) return;
+    showContextMenu(e.clientX, e.clientY, node);
+  });
+
+  /* ---------------------------------------------------------------- */
+  /*  Init                                                            */
+  /* ---------------------------------------------------------------- */
+
+  try {
+    api = await waitForApi();
+  } catch (e) {
+    $fileTreeEl.innerHTML = `<div class="empty-state"><div class="empty-title">API unavailable</div></div>`;
+    return;
+  }
+
+  // Restore saved state
+  try {
+    const savedFilter = await api.storage.get(STORAGE_KEYS.filter);
+    if (savedFilter) filterMode = savedFilter;
+
+    const savedExpanded = await api.storage.get(STORAGE_KEYS.expandedFolders);
+    if (savedExpanded && typeof savedExpanded === 'object') expandedFolders = savedExpanded;
+
+    const savedSelection = await api.storage.get(STORAGE_KEYS.currentSelection);
+    if (savedSelection && typeof savedSelection === 'object' && typeof savedSelection.relativePath === 'string') {
+      selectedPath = savedSelection.relativePath;
+    }
+
+    const savedViewMode = await api.storage.get('media-vault:sidebarViewMode');
+    if (savedViewMode === 'flat' || savedViewMode === 'tree') sidebarViewMode = savedViewMode;
+  } catch (_) {}
+
+  updateViewToggleButton();
+  await loadWorkspace();
+  buildFilterDropdown();
+
+  /* ---------------------------------------------------------------- */
+  /*  Workspace Loading                                               */
+  /* ---------------------------------------------------------------- */
+
+  async function loadWorkspace() {
+    isLoading = true;
+    renderLoading();
+    assetIndexLoaded = false;
+    allFiles = [];
+    filteredFiles = [];
+    fileTree = [];
+
+    try {
+      workspace = await api.workspace.getActive();
+      if (!workspace) {
+        $workspaceLabel.textContent = 'No Workspace';
+        renderEmpty('No workspace active', 'Open a workspace to browse assets.');
+        isLoading = false;
+        return;
+      }
+      $workspaceLabel.textContent = workspace.name || 'Workspace';
+      await refreshWorkspaceSwitcherState();
+      if (sidebarViewMode === 'flat' || searchQuery || filterMode !== 'all') {
+        await loadFiles();
+      } else {
+        await loadTreeRoot();
+      }
+    } catch (e) {
+      renderEmpty('Error loading workspace', e.message || 'Unknown error');
+    }
+    isLoading = false;
+  }
+
+  function applyWorkspaceSwitcherState(workspaces) {
+    const hasMultipleWorkspaces = Array.isArray(workspaces) && workspaces.length > 1;
+    $workspaceName.classList.toggle('is-static', !hasMultipleWorkspaces);
+    if (!hasMultipleWorkspaces) {
+      $workspaceDropdown.classList.remove('visible');
+      $wsChevron.classList.remove('open');
+    }
+  }
+
+  async function refreshWorkspaceSwitcherState() {
+    try {
+      const result = await api.workspace.list();
+      applyWorkspaceSwitcherState(result.workspaces || []);
+    } catch (_) {
+      applyWorkspaceSwitcherState([]);
+    }
+  }
+
+  async function loadFiles() {
+    try {
+      // Fetch all files + directories (no extension filter — we filter client-side
+      // because the API's extension filter strips directories)
+      const result = await api.workspace.listFiles({
+        includeDirectories: true,
+      });
+      const raw = result.files || [];
+      // Keep only asset files + all directories
+      allFiles = raw.filter(f =>
+        f.type === 'directory' || ALL_ASSET_EXTENSIONS.includes(getFileExtension(f.name))
+      );
+      assetIndexLoaded = true;
+      treeNeedsRebuild = true;
+      void publishAssetIndexCache(allFiles);
+      applyFilters();
+    } catch (e) {
+      renderEmpty('Error listing files', e.message || 'Unknown error');
+    }
+  }
+
+  function buildAssetIndexCachePayload(files) {
+    return {
+      workspaceId: workspace?.id || null,
+      workspacePath: workspace?.path || null,
+      loadedAt: Date.now(),
+      entries: files.map((entry) => ({
+        name: entry.name,
+        relativePath: entry.relativePath,
+        type: entry.type,
+        size: typeof entry.size === 'number' ? entry.size : undefined,
+      })),
+    };
+  }
+
+  async function publishAssetIndexCache(files) {
+    const payload = buildAssetIndexCachePayload(files);
+    broadcastExtensionEvent('asset-index-updated', payload);
+    try {
+      await api.storage.set(STORAGE_KEYS.assetIndexCache, payload);
+    } catch (_) {}
+  }
+
+  function clearPendingSearchApply() {
+    if (searchApplyTimer !== null) {
+      clearTimeout(searchApplyTimer);
+      searchApplyTimer = null;
+    }
+  }
+
+  function scheduleFilterApply() {
+    clearPendingSearchApply();
+    searchApplyTimer = setTimeout(() => {
+      searchApplyTimer = null;
+      applyFilters();
+    }, SEARCH_APPLY_DEBOUNCE_MS);
+  }
+
+  function usesIndexedAssetMode() {
+    return sidebarViewMode === 'flat' || !!searchQuery || filterMode !== 'all';
+  }
+
+  async function restoreLazyTreeIfPossible() {
+    if (sidebarViewMode !== 'tree') return false;
+    if (searchQuery || filterMode !== 'all') return false;
+    await loadTreeRoot();
+    return true;
+  }
+
+  function getPathDepth(relativePath) {
+    if (!relativePath) return 0;
+    return relativePath.split('/').filter(Boolean).length;
+  }
+
+  function sortDirectoryEntries(entries) {
+    return [...entries].sort((a, b) => {
+      if (a.type === 'directory' && b.type !== 'directory') return -1;
+      if (a.type !== 'directory' && b.type === 'directory') return 1;
+      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+    });
+  }
+
+  function mapEntriesToTreeNodes(entries) {
+    return sortDirectoryEntries(entries)
+      .filter((entry) => entry.type === 'directory' || ALL_ASSET_EXTENSIONS.includes(getFileExtension(entry.name)))
+      .map((entry) => ({
+        ...entry,
+        children: entry.type === 'directory' ? undefined : undefined,
+      }));
+  }
+
+  async function readDirectoryEntries(relativePath) {
+    const result = await api.workspace.readDirectory({
+      path: relativePath || '',
+      includeDirectories: true,
+    });
+    return Array.isArray(result?.files) ? result.files : [];
+  }
+
+  function findTreeNode(nodes, relativePath) {
+    for (const node of nodes) {
+      if (node.relativePath === relativePath) return node;
+      if (node.type === 'directory' && Array.isArray(node.children)) {
+        const childMatch = findTreeNode(node.children, relativePath);
+        if (childMatch) return childMatch;
+      }
+    }
+    return null;
+  }
+
+  function updateTreeNodeChildren(nodes, relativePath, children) {
+    return nodes.map((node) => {
+      if (node.relativePath === relativePath && node.type === 'directory') {
+        return { ...node, children };
+      }
+      if (node.type === 'directory' && Array.isArray(node.children)) {
+        return {
+          ...node,
+          children: updateTreeNodeChildren(node.children, relativePath, children),
+        };
+      }
+      return node;
+    });
+  }
+
+  async function loadTreeRoot() {
+    treeModeLoading = true;
+    renderLoading();
+    try {
+      const entries = await readDirectoryEntries('');
+      fileTree = mapEntriesToTreeNodes(entries);
+      treeNeedsRebuild = false;
+      treeModeLoading = false;
+      await refreshExpandedTreeFolders();
+      render();
+    } catch (e) {
+      treeModeLoading = false;
+      renderEmpty('Error listing files', e.message || 'Unknown error');
+    }
+  }
+
+  async function loadFolderChildren(relativePath, options = {}) {
+    const forceRefresh = options.forceRefresh === true;
+    const node = findTreeNode(fileTree, relativePath);
+    if (!node || node.type !== 'directory') return;
+    if (!forceRefresh && Array.isArray(node.children)) return;
+
+    const entries = await readDirectoryEntries(relativePath);
+    fileTree = updateTreeNodeChildren(fileTree, relativePath, mapEntriesToTreeNodes(entries));
+    treeNeedsRebuild = false;
+  }
+
+  async function refreshExpandedTreeFolders() {
+    const expanded = Object.keys(expandedFolders)
+      .filter((path) => expandedFolders[path])
+      .sort((a, b) => getPathDepth(a) - getPathDepth(b));
+
+    for (const relativePath of expanded) {
+      await loadFolderChildren(relativePath, { forceRefresh: true });
+    }
+  }
+
+  async function ensureAssetIndexLoaded(forceRefresh = false) {
+    if (assetIndexLoaded && !forceRefresh) return;
+    if (forceRefresh) {
+      assetIndexLoaded = false;
+      allFiles = [];
+      filteredFiles = [];
+    }
+    await loadFiles();
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Filtering & Search                                              */
+  /* ---------------------------------------------------------------- */
+
+  function applyFilters() {
+    clearPendingSearchApply();
+
+    let files = allFiles.filter(f => f.type === 'file');
+
+    // Apply category filter
+    if (filterMode !== 'all') {
+      const exts = ASSET_TYPES[filterMode]?.extensions || [];
+      files = files.filter(f => exts.includes(getFileExtension(f.name)));
+    }
+
+    // Apply search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      files = files.filter(f => f.name.toLowerCase().includes(q) || f.relativePath.toLowerCase().includes(q));
+    }
+
+    filteredFiles = files;
+    treeNeedsRebuild = true;
+
+    render();
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Render                                                           */
+  /* ---------------------------------------------------------------- */
+
+  function updateViewToggleButton() {
+    if (sidebarViewMode === 'flat') {
+      $btnViewToggle.innerHTML = ICONS.chevronRight; // tree icon
+      $btnViewToggle.title = 'Switch to tree view';
+      $btnViewToggle.classList.add('active');
+    } else {
+      $btnViewToggle.innerHTML = ICONS.list; // flat icon
+      $btnViewToggle.title = 'Switch to flat view';
+      $btnViewToggle.classList.remove('active');
+    }
+  }
+
+  function render() {
+    if (sidebarViewMode === 'flat') {
+      renderFlat();
+    } else {
+      ensureTreeBuilt();
+      renderTree();
+    }
+  }
+
+  function ensureTreeBuilt() {
+    if (!treeNeedsRebuild) return;
+    // Build tree from files only — buildFileTree synthesizes parent directories
+    // from file paths, so passing explicit directory entries causes duplicates
+    fileTree = buildFileTree(filteredFiles);
+    treeNeedsRebuild = false;
+  }
+
+  function renderFlat() {
+    if (filteredFiles.length === 0 && !isLoading) {
+      renderEmpty(
+        filterMode === 'all' ? 'No assets found' : `No ${ASSET_TYPES[filterMode]?.label || 'assets'} found`,
+        'Try a different filter or check your workspace.'
+      );
+      return;
+    }
+
+    nodeDataMap.clear();
+    domNodeMap.clear();
+
+    const sorted = [...filteredFiles].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    const fragment = document.createDocumentFragment();
+
+    for (const file of sorted) {
+      nodeDataMap.set(file.relativePath, file);
+
+      const el = document.createElement('div');
+      el.className = 'tree-item flat-item' + (file.relativePath === selectedPath ? ' selected' : '');
+      el.style.paddingLeft = '8px';
+      el.dataset.path = file.relativePath || '';
+      el.dataset.type = 'file';
+
+      domNodeMap.set(file.relativePath, el);
+
+      // Icon
+      const iconEl = document.createElement('span');
+      iconEl.className = 'item-icon';
+      if (is3DFile(file.name)) {
+        iconEl.innerHTML = ICONS.cube;
+      } else if (isTextureFile(file.name)) {
+        iconEl.innerHTML = icon('image', '#c678dd');
+      } else {
+        iconEl.innerHTML = icon('image', '#6eb5ff');
+      }
+      el.appendChild(iconEl);
+
+      // Name + path
+      const textWrap = document.createElement('div');
+      textWrap.className = 'flat-item-text';
+      const nameEl = document.createElement('span');
+      nameEl.className = 'item-name';
+      nameEl.textContent = file.name;
+      textWrap.appendChild(nameEl);
+      const pathEl = document.createElement('span');
+      pathEl.className = 'flat-item-path';
+      pathEl.textContent = getDirectory(file.relativePath);
+      textWrap.appendChild(pathEl);
+      el.appendChild(textWrap);
+
+      fragment.appendChild(el);
+    }
+
+    const scrollTop = $fileTreeEl.scrollTop;
+    $fileTreeEl.innerHTML = '';
+    $fileTreeEl.appendChild(fragment);
+    $fileTreeEl.scrollTop = scrollTop;
+  }
+
+
+  function renderTree() {
+    // In tree mode filteredFiles is not populated — guard on fileTree instead
+    if (fileTree.length === 0 && !isLoading && !treeModeLoading) {
+      renderEmpty('No assets found', 'Try a different filter or check your workspace.');
+      return;
+    }
+
+    nodeDataMap.clear();
+    domNodeMap.clear();
+
+    // Preserve scroll position across full re-renders (e.g. chevron toggle)
+    const scrollTop = $fileTreeEl.scrollTop;
+
+    const fragment = document.createDocumentFragment();
+    renderTreeNodes(fileTree, fragment, 0);
+    $fileTreeEl.innerHTML = '';
+    $fileTreeEl.appendChild(fragment);
+
+    $fileTreeEl.scrollTop = scrollTop;
+  }
+
+  /** Create a single tree-item DOM element for a node (no event listeners). */
+  function createTreeItemEl(node, depth) {
+    const el = document.createElement('div');
+    el.className = 'tree-item' + (node.relativePath === selectedPath ? ' selected' : '');
+    el.style.paddingLeft = (depth * 16 + 8) + 'px';
+    el.dataset.path = node.relativePath || '';
+    el.dataset.type = node.type || 'file';
+    el.dataset.fullPath = node.path || '';
+    el.dataset.depth = String(depth);
+
+    const isDir = node.type === 'directory';
+    const isExpanded = !!expandedFolders[node.relativePath];
+
+    // Chevron
+    const chevron = document.createElement('span');
+    chevron.className = 'chevron' + (isDir ? (isExpanded ? ' expanded' : '') : ' hidden');
+    chevron.innerHTML = ICONS.chevronRight;
+    el.appendChild(chevron);
+
+    // Icon
+    const iconEl = document.createElement('span');
+    iconEl.className = 'item-icon';
+    if (isDir) {
+      iconEl.innerHTML = isExpanded ? ICONS.folderOpen : ICONS.folder;
+    } else {
+      const cat = getAssetCategory(node.name);
+      if (cat === '3d') {
+        iconEl.innerHTML = icon('cube', '#c27ba0');
+      } else if (cat === 'texture') {
+        iconEl.innerHTML = icon('grid', '#ab47bc');
+      } else if (cat === 'image') {
+        iconEl.innerHTML = icon('image', '#c27ba0');
+      } else {
+        iconEl.innerHTML = ICONS.file;
+      }
+    }
+    el.appendChild(iconEl);
+
+    // Name
+    const nameEl = document.createElement('span');
+    nameEl.className = 'item-name';
+    nameEl.textContent = node.name;
+    el.appendChild(nameEl);
+
+    return el;
+  }
+
+  function renderTreeNodes(nodes, parent, depth) {
+    for (const node of nodes) {
+      nodeDataMap.set(node.relativePath, node);
+
+      const el = createTreeItemEl(node, depth);
+      domNodeMap.set(node.relativePath, el);
+      parent.appendChild(el);
+
+      // Render children if expanded directory
+      const isDir = node.type === 'directory';
+      const isExpanded = !!expandedFolders[node.relativePath];
+      if (isDir && isExpanded && node.children) {
+        renderTreeNodes(node.children, parent, depth + 1);
+      }
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Render Helpers                                                  */
+  /* ---------------------------------------------------------------- */
+
+  function renderLoading() {
+    $fileTreeEl.innerHTML = `<div class="loading-overlay"><div class="loading-spinner">${ICONS.refresh}</div></div>`;
+  }
+
+  function renderEmpty(title, subtitle) {
+    const html = `
+      <div class="empty-state">
+        <div class="empty-icon">${icon('image')}</div>
+        <div class="empty-title">${escapeHtml(title)}</div>
+        <div class="empty-subtitle">${escapeHtml(subtitle)}</div>
+      </div>`;
+    $fileTreeEl.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    const el = document.createElement('span');
+    el.textContent = str;
+    return el.innerHTML;
+  }
+
+  /** Clipboard write via host bridge (sandbox blocks navigator.clipboard and execCommand). */
+  function copyText(text) {
+    console.log('[Media Vault] copyText called:', text);
+    if (api && api.ui && api.ui.copyToClipboard) {
+      api.ui.copyToClipboard(text)
+        .then(() => console.log('[Media Vault] Clipboard write succeeded'))
+        .catch((e) => {
+          console.warn('[Media Vault] Bridge clipboard failed, trying fallback:', e);
+          fallbackCopy(text);
+        });
+    } else {
+      console.log('[Media Vault] No bridge clipboard, using fallback');
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text) {
+    // Try execCommand in a user-gesture context
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;left:-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      const ok = document.execCommand('copy');
+      console.log('[Media Vault] execCommand copy:', ok);
+    } catch (e) {
+      console.warn('[Media Vault] execCommand failed:', e);
+    }
+    ta.remove();
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Actions                                                         */
+  /* ---------------------------------------------------------------- */
+
+  async function toggleFolder(relativePath) {
+    const wasExpanded = !!expandedFolders[relativePath];
+    if (wasExpanded) {
+      delete expandedFolders[relativePath];
+    } else {
+      expandedFolders[relativePath] = true;
+    }
+    api.storage.set(STORAGE_KEYS.expandedFolders, expandedFolders).catch(() => {});
+
+    if (!wasExpanded && sidebarViewMode === 'tree' && !searchQuery && filterMode === 'all') {
+      try {
+        await loadFolderChildren(relativePath);
+      } catch (_) {
+        delete expandedFolders[relativePath];
+      }
+    }
+
+    render();
+  }
+
+  function buildViewerTabTitle(node) {
+    return 'Media Vault';
+  }
+
+  function buildViewerTabId(node) {
+    return 'media-vault-viewer';
+  }
+
+  function buildViewerQuery(node) {
+    if (node.type === 'directory') {
+      return {
+        folder: node.relativePath || '',
+        name: node.name || '',
+      };
+    }
+
+    return {
+      path: node.relativePath || '',
+      name: node.name || '',
+    };
+  }
+
+  function buildSelection(node) {
+    return {
+      type: node.type === 'directory' ? 'directory' : 'file',
+      name: node.name,
+      path: node.path || '',
+      relativePath: node.relativePath || '',
+      updatedAt: Date.now(),
+    };
+  }
+
+  async function persistSelection(selection) {
+    await api.storage.set(STORAGE_KEYS.currentSelection, selection);
+    return selection;
+  }
+
+  async function openSelection(node) {
+    const prevPath = selectedPath;
+    selectedPath = node.relativePath;
+
+    // Incremental selection update — swap .selected class without full re-render
+    if (prevPath !== selectedPath) {
+      if (prevPath != null) {
+        const prevEl = domNodeMap.get(prevPath);
+        if (prevEl) prevEl.classList.remove('selected');
+      }
+      const nextEl = domNodeMap.get(selectedPath);
+      if (nextEl) nextEl.classList.add('selected');
+    }
+
+    const selection = buildSelection(node);
+
+    // Fire storage write — the host notifies siblings IMMEDIATELY (before
+    // the disk I/O completes), so the viewer starts reacting in ~1ms.
+    // Run persist + tab-open in parallel for minimum latency.
+    const persistPromise = persistSelection(selection).catch(() => null);
+    broadcastExtensionEvent('selection-changed', selection);
+
+    try {
+      await api.tabs.open({
+        entrypoint: 'viewer.html',
+        title: buildViewerTabTitle(node),
+        tabId: buildViewerTabId(node),
+        query: buildViewerQuery(node),
+      });
+    } catch (_) {
+      // Ignore tab-open errors in the sidebar.
+    }
+
+    await persistPromise;
+
+    if (node.type !== 'directory') {
+      trackRecent(node);
+    }
+  }
+
+  async function trackRecent(node) {
+    try {
+      let recent = (await api.storage.get(STORAGE_KEYS.recentFiles)) || [];
+      recent = recent.filter(r => r.relativePath !== node.relativePath);
+      recent.unshift({ name: node.name, relativePath: node.relativePath, path: node.path, openedAt: Date.now() });
+      if (recent.length > 50) recent = recent.slice(0, 50);
+      await api.storage.set(STORAGE_KEYS.recentFiles, recent);
+    } catch (_) {}
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Context Menu                                                    */
+  /* ---------------------------------------------------------------- */
+
+  function showContextMenu(x, y, node) {
+    $contextMenu.innerHTML = '';
+
+    const items = [];
+
+    if (node.type !== 'directory') {
+      items.push({ label: 'Open in Viewer', action: () => void openSelection(node) });
+      items.push(null); // separator
+    } else {
+      items.push({ label: 'Open Folder', action: () => void openSelection(node) });
+      items.push(null);
+    }
+
+    items.push({ label: 'Copy Path', action: () => {
+      copyText(node.path || node.relativePath);
+      api.ui.showToast('Path copied', 'success').catch(() => {});
+    }});
+
+    items.push({ label: 'Copy Relative Path', action: () => {
+      copyText(node.relativePath);
+      api.ui.showToast('Relative path copied', 'success').catch(() => {});
+    }});
+
+    for (const item of items) {
+      if (item === null) {
+        const sep = document.createElement('div');
+        sep.className = 'context-menu-separator';
+        $contextMenu.appendChild(sep);
+      } else {
+        const btn = document.createElement('button');
+        btn.className = 'context-menu-item';
+        btn.textContent = item.label;
+        btn.addEventListener('click', () => {
+          hideContextMenu();
+          item.action();
+        });
+        $contextMenu.appendChild(btn);
+      }
+    }
+
+    // Position
+    $contextMenu.style.left = x + 'px';
+    $contextMenu.style.top = y + 'px';
+    $contextMenu.classList.add('visible');
+
+    // Adjust if off-screen
+    requestAnimationFrame(() => {
+      const rect = $contextMenu.getBoundingClientRect();
+      if (rect.right > window.innerWidth) {
+        $contextMenu.style.left = (x - rect.width) + 'px';
+      }
+      if (rect.bottom > window.innerHeight) {
+        $contextMenu.style.top = (y - rect.height) + 'px';
+      }
+    });
+  }
+
+  function hideContextMenu() {
+    $contextMenu.classList.remove('visible');
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Filter Dropdown                                                 */
+  /* ---------------------------------------------------------------- */
+
+  function buildFilterDropdown() {
+    const options = [
+      { value: 'all', label: 'All Assets' },
+      { value: '3d', label: '3D Models' },
+      { value: 'texture', label: 'Textures' },
+      { value: 'image', label: 'Images' },
+    ];
+
+    $filterDropdown.innerHTML = '';
+    for (const opt of options) {
+      const btn = document.createElement('button');
+      btn.className = 'filter-option' + (filterMode === opt.value ? ' active' : '');
+      btn.textContent = opt.label;
+      btn.addEventListener('click', async () => {
+        filterMode = opt.value;
+        api.storage.set(STORAGE_KEYS.filter, filterMode).catch(() => {});
+        $filterDropdown.classList.remove('visible');
+        $btnFilter.classList.toggle('active', filterMode !== 'all');
+        buildFilterDropdown();
+        if (await restoreLazyTreeIfPossible()) {
+          return;
+        }
+        await ensureAssetIndexLoaded();
+        applyFilters();
+      });
+      $filterDropdown.appendChild(btn);
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Event Handlers                                                  */
+  /* ---------------------------------------------------------------- */
+
+  // Workspace switcher
+  $workspaceName.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if ($workspaceName.classList.contains('is-static')) return;
+    const isOpen = $workspaceDropdown.classList.toggle('visible');
+    $wsChevron.classList.toggle('open', isOpen);
+
+    if (isOpen) {
+      try {
+        const result = await api.workspace.list();
+        const workspaces = result.workspaces || [];
+        const activeId = result.activeWorkspaceId;
+        applyWorkspaceSwitcherState(workspaces);
+        $workspaceDropdown.innerHTML = '';
+
+        if (workspaces.length === 0) {
+          $workspaceDropdown.innerHTML = '<div class="workspace-dropdown-empty">No workspaces</div>';
+          return;
+        }
+
+        for (const ws of workspaces) {
+          const btn = document.createElement('button');
+          btn.className = 'workspace-option' + (ws.id === activeId ? ' active' : '');
+          btn.textContent = ws.name || ws.path || 'Unnamed';
+          btn.addEventListener('click', async () => {
+            $workspaceDropdown.classList.remove('visible');
+            $wsChevron.classList.remove('open');
+            if (ws.id !== activeId) {
+              await api.workspace.setActive({ workspaceId: ws.id });
+              await loadWorkspace();
+            }
+          });
+          $workspaceDropdown.appendChild(btn);
+        }
+      } catch (_) {
+        $workspaceDropdown.innerHTML = '<div class="workspace-dropdown-empty">Failed to load workspaces</div>';
+      }
+    }
+  });
+
+  $btnSearch.addEventListener('click', () => {
+    const visible = $searchBar.classList.toggle('visible');
+    if (visible) {
+      $searchInput.focus();
+      return;
+    }
+
+    $searchInput.value = '';
+    searchQuery = '';
+    clearPendingSearchApply();
+    void (async () => {
+      if (await restoreLazyTreeIfPossible()) {
+        return;
+      }
+      if (usesIndexedAssetMode()) {
+        await ensureAssetIndexLoaded();
+        applyFilters();
+      }
+    })();
+  });
+
+  $searchInput.addEventListener('input', () => {
+    searchQuery = $searchInput.value;
+    void (async () => {
+      if (await restoreLazyTreeIfPossible()) {
+        return;
+      }
+      await ensureAssetIndexLoaded();
+      scheduleFilterApply();
+    })();
+  });
+
+  $btnViewToggle.addEventListener('click', () => {
+    sidebarViewMode = sidebarViewMode === 'tree' ? 'flat' : 'tree';
+    api.storage.set('media-vault:sidebarViewMode', sidebarViewMode).catch(() => {});
+    void (async () => {
+      updateViewToggleButton();
+      if (await restoreLazyTreeIfPossible()) {
+        return;
+      }
+      if (usesIndexedAssetMode()) {
+        await ensureAssetIndexLoaded();
+        applyFilters();
+      } else {
+        render();
+      }
+    })();
+  });
+
+  $btnRefresh.addEventListener('click', async () => {
+    $btnRefresh.classList.add('spinning');
+    if (sidebarViewMode === 'tree' && !searchQuery && filterMode === 'all') {
+      await loadTreeRoot();
+    } else {
+      await ensureAssetIndexLoaded(true);
+    }
+    $btnRefresh.classList.remove('spinning');
+  });
+
+  $btnFilter.addEventListener('click', (e) => {
+    e.stopPropagation();
+    $filterDropdown.classList.toggle('visible');
+  });
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.filter-dropdown-anchor')) {
+      $filterDropdown.classList.remove('visible');
+    }
+    if (!e.target.closest('.workspace-header')) {
+      $workspaceDropdown.classList.remove('visible');
+      $wsChevron.classList.remove('open');
+    }
+    hideContextMenu();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      $filterDropdown.classList.remove('visible');
+      $workspaceDropdown.classList.remove('visible');
+      $wsChevron.classList.remove('open');
+      hideContextMenu();
+      if ($searchBar.classList.contains('visible')) {
+        $searchBar.classList.remove('visible');
+        $searchInput.value = '';
+        searchQuery = '';
+        clearPendingSearchApply();
+        void (async () => {
+          if (await restoreLazyTreeIfPossible()) {
+            return;
+          }
+          if (usesIndexedAssetMode()) {
+            await ensureAssetIndexLoaded();
+            applyFilters();
+          }
+        })();
+      }
+    }
+  });
+
+  // Listen for selection changes from the viewer tab.
+  window.addEventListener('clairvoyance-storage-changed', async () => {
+    try {
+      const savedSelection = await api.storage.get(STORAGE_KEYS.currentSelection);
+      if (savedSelection && typeof savedSelection === 'object' && typeof savedSelection.relativePath === 'string') {
+        const prevPath = selectedPath;
+        selectedPath = savedSelection.relativePath;
+        // Incremental selection update
+        if (prevPath !== selectedPath) {
+          if (prevPath != null) {
+            const prevEl = domNodeMap.get(prevPath);
+            if (prevEl) prevEl.classList.remove('selected');
+          }
+          const nextEl = domNodeMap.get(selectedPath);
+          if (nextEl) nextEl.classList.add('selected');
+        }
+      }
+    } catch (_) {}
+  });
+
+  // Initial filter button state
+  $btnFilter.classList.toggle('active', filterMode !== 'all');
+
+})();
+</script>
+</body>
+</html>

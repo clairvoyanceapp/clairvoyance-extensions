@@ -1,0 +1,55 @@
+schemaVersion: 1
+
+metadata:
+  id: dashboard
+  name: Dashboard
+  description: A simple dashboard showing recent notes, reports, canvases, and exhibits.
+  createdInWorkspaceId: null
+  createdInWorkspaceName: null
+  createdByStaffId: null
+  createdByStaffName: null
+  createdAt: 1769774400000 # ms since epoch (2026-01-30T12:00:00Z)
+  updatedAt: 1769774400000 # ms since epoch (2026-01-30T12:00:00Z)
+  tags: [dashboard, overview]
+  thumbnail: null
+  color: null
+  icon: null
+  isFavorite: false
+
+extension:
+  type: clairvoyance-extension
+  version: 0.1.0
+  minClairvoyanceVersion: 0.50.0
+
+  # UI surfaces this extension contributes
+  contributes:
+    # Command Bar icon (required) - appears in the left icon rail
+    commandBar:
+      title: Dashboard
+      icon: icon.svg
+
+    # No sidebar - clicking the icon opens the tab directly
+
+    # Tab in the main content area
+    tabs:
+      - id: main
+        title: Dashboard
+        entrypoint: dashboard.html
+        singleton: true  # Only one Dashboard tab can be open
+
+  author:
+    name: Clairvoyance Team
+  repository: null
+  license: MIT
+  permissions:
+    - workspace-read
+    - notes-read
+    - canvas-read
+    - exhibits-read
+  settings:
+    - id: itemsPerSection
+      type: number
+      label: Items per section
+      default: 4
+      min: 2
+      max: 10

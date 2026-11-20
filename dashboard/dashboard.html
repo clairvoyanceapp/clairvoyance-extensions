@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard (Test Extension)</title>
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body>
+    <div id="app" class="app">
+      <div id="error" class="notice noticeError hidden" role="alert"></div>
+      <div id="loading" class="notice noticeLoading hidden">Loading…</div>
+
+      <section class="section">
+        <div class="contentGrid">
+          <div class="contentSection" data-type="notes">
+            <div class="contentHeader">
+              <div class="contentHeaderLeft">
+                <div class="sectionIcon sectionIconNotes" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M8 13h8" />
+                    <path d="M8 17h8" />
+                    <path d="M8 9h2" />
+                  </svg>
+                </div>
+                <div class="contentTitle">Recent Notes</div>
+              </div>
+              <button class="linkButton" type="button" data-action="viewAll" data-target="notes">
+                View all
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+            <div class="contentList" id="list-notes"></div>
+          </div>
+
+          <div class="contentSection" data-type="reports">
+            <div class="contentHeader">
+              <div class="contentHeaderLeft">
+                <div class="sectionIcon sectionIconReports" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 2h6" />
+                    <path d="M9 4h6" />
+                    <path d="M10 12h4" />
+                    <path d="M10 16h4" />
+                    <path d="M8 2h8a2 2 0 0 1 2 2v18H6V4a2 2 0 0 1 2-2z" />
+                  </svg>
+                </div>
+                <div class="contentTitle">Recent Reports</div>
+              </div>
+              <button class="linkButton" type="button" data-action="viewAll" data-target="reports">
+                View all
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+            <div class="contentList" id="list-reports"></div>
+          </div>
+
+          <div class="contentSection" data-type="canvases">
+            <div class="contentHeader">
+              <div class="contentHeaderLeft">
+                <div class="sectionIcon sectionIconCanvases" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                </div>
+                <div class="contentTitle">Recent Canvases</div>
+              </div>
+              <button class="linkButton" type="button" data-action="viewAll" data-target="canvas">
+                View all
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+            <div class="contentList" id="list-canvases"></div>
+          </div>
+
+          <div class="contentSection" data-type="exhibits">
+            <div class="contentHeader">
+              <div class="contentHeaderLeft">
+                <div class="sectionIcon sectionIconExhibits" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2l1.8 5.6H20l-4.9 3.5L16.9 17 12 13.7 7.1 17l1.8-5.9L4 7.6h6.2Z" />
+                  </svg>
+                </div>
+                <div class="contentTitle">Recent Exhibits</div>
+              </div>
+              <button class="linkButton" type="button" data-action="viewAll" data-target="exhibits">
+                View all
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+            <div class="contentList" id="list-exhibits"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="dashboard.js"></script>
+  </body>
+</html>

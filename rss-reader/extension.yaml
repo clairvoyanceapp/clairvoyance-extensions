@@ -1,0 +1,215 @@
+schemaVersion: 1
+metadata:
+  id: rss-reader
+  name: RSS Reader
+  description: Browse and read RSS feed entries from your selected sources.
+  createdInWorkspaceId: null
+  createdInWorkspaceName: null
+  createdByStaffId: null
+  createdByStaffName: null
+  createdAt: 1772161786873
+  updatedAt: 1772161786873
+  tags: [rss, news, reader]
+  thumbnail: null
+  color: null
+  icon: icon.svg
+  isFavorite: false
+
+extension:
+  type: clairvoyance-extension
+  version: 0.3.1
+  minClairvoyanceVersion: 0.55.0
+  contributes:
+    commandBar:
+      title: RSS
+      icon: icon.svg
+    sidebar:
+      entrypoint: sidebar.html
+    tabs:
+      - id: reader
+        title: RSS Reader
+        entrypoint: reader.html
+        singleton: true
+    ai:
+      tools:
+        - name: listSources
+          description: "List all configured RSS feed sources with their titles, URLs, and last-refreshed timestamps."
+          execution:
+            type: storage
+            action: get
+            key: "clairvoyance-rss-extension:sources-v1"
+
+        - name: getArticles
+          description: "Get all cached articles across all sources. Returns an object keyed by sourceId, each containing an items array with article title, link, publishedAt, summary, and content."
+          execution:
+            type: storage
+            action: get
+            key: "clairvoyance-rss-extension:cache-v1"
+
+        - name: getReadStatus
+          description: "Get read/unread status for articles. Returns an object keyed by sourceId, each containing an array of read item IDs."
+          execution:
+            type: storage
+            action: get
+            key: "clairvoyance-rss-extension:read-v1"
+
+        - name: markRead
+          description: "Update read status for articles. Expects a 'value' parameter: an object keyed by sourceId, each containing an array of read item IDs. Merges with or replaces existing read state."
+          inputSchema:
+            type: object
+            properties:
+              value:
+                type: object
+                description: "Object keyed by sourceId → array of read item ID strings"
+            required: [value]
+          execution:
+            type: storage
+            action: set
+            key: "clairvoyance-rss-extension:read-v1"
+
+        - name: addSource
+          description: "Add a new RSS source by URL. Optionally refreshes immediately."
+          inputSchema:
+            type: object
+            properties:
+              url:
+                type: string
+                description: "RSS feed URL"
+              title:
+                type: string
+                description: "Optional custom source title"
+              refresh:
+                type: boolean
+                description: "Whether to fetch entries immediately (default true)"
+            required: [url]
+          execution:
+            type: iframe
+            entrypoint: sidebar
+            handler: addSource
+
+        - name: removeSource
+          description: "Remove an RSS source by sourceId or URL."
+          inputSchema:
+            type: object
+            properties:
+              sourceId:
+                type: string
+              url:
+                type: string
+          execution:
+            type: iframe
+            entrypoint: sidebar
+            handler: removeSource
+
+        - name: refreshSources
+          description: "Refresh all sources or a selected list of source IDs."
+          inputSchema:
+            type: object
+            properties:
+              sourceIds:
+                type: array
+                items:
+                  type: string
+                description: "Optional source IDs. If omitted, refreshes all sources."
+          execution:
+            type: iframe
+            entrypoint: sidebar
+            handler: refreshSources
+
+        - name: queryArticles
+          description: "Return article metadata (optionally unread-only) with filtering and limits. Prefer this over getArticles for lower context usage."
+          inputSchema:
+            type: object
+            properties:
+              sourceIds:
+                type: array
+                items:
+                  type: string
+              unreadOnly:
+                type: boolean
+              query:
+                type: string
+                description: "Case-insensitive text match against title + summary"
+              limit:
+                type: integer
+                minimum: 1
+                maximum: 100
+              includeSummary:
+                type: boolean
+                description: "Include short summaries in results (default true)"
+          execution:
+            type: iframe
+            entrypoint: sidebar
+            handler: queryArticles
+
+        - name: setReadStatus
+          description: "Mark individual articles read/unread in batch."
+          inputSchema:
+            type: object
+            properties:
+              read:
+                type: boolean
+                description: "Default read state for items that omit read"
+              items:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sourceId:
+                      type: string
+                    itemId:
+                      type: string
+                    read:
+                      type: boolean
+                  required: [sourceId, itemId]
+            required: [items]
+          execution:
+            type: iframe
+            entrypoint: sidebar
+            handler: setReadStatus
+
+  author:
+    name: Brad
+  license: MIT
+  permissions:
+    - extension.storage
+    - tabs.open
+    - ui.notify
+    - ui.openExternal
+    - net.fetch
+    - ai.tools
+
+staffKnowledge:
+  markdown: |
+    ## RSS Reader Extension
+
+    Browse and read RSS feed entries. The user manages feed sources through the sidebar UI,
+    and articles are displayed in the reader tab.
+
+    ### Available Tools (CAM)
+
+    - `ext_rss-reader__listSources` — Returns array of feed sources: `[{id, title, url, createdAt, lastRefreshed}]`
+    - `ext_rss-reader__getArticles` — Returns cached articles: `{sourceId: {items: [{id, title, link, publishedAt, summary, content}], lastFetched}}`
+    - `ext_rss-reader__getReadStatus` — Returns read state: `{sourceId: [readItemId, ...]}`
+    - `ext_rss-reader__markRead({value})` — Write read state (same format as getReadStatus output)
+    - `ext_rss-reader__addSource({url, title?, refresh?})` — Add a source and optionally refresh it
+    - `ext_rss-reader__removeSource({sourceId? | url?})` — Remove a source
+    - `ext_rss-reader__refreshSources({sourceIds?})` — Refresh selected or all sources
+    - `ext_rss-reader__queryArticles({sourceIds?, unreadOnly?, query?, limit?, includeSummary?})` — Filtered, lightweight article retrieval
+    - `ext_rss-reader__setReadStatus({items, read?})` — Batch mark articles read/unread
+
+    ### How to Use
+
+    1. Call `listSources` to inspect configured feeds
+    2. If needed, call `addSource` / `removeSource` / `refreshSources` to manage feed state
+    3. Prefer `queryArticles` for summaries and triage (smaller payload)
+    4. Use `getArticles` only when you need full cached content
+    5. Use `setReadStatus` (or legacy `markRead`) to persist read/unread updates
+
+    ### Data Notes
+
+    - Articles are cached locally; `getArticles` returns whatever was last fetched
+    - `queryArticles` intentionally returns compact article rows to reduce context usage
+    - Each source's `items` array contains parsed RSS entries with `id`, `title`, `link`, `publishedAt`, `summary`, and `content` fields
+    - The `content` field contains the full article HTML (may be large)
+    - For summaries, prefer the `summary` field which is shorter

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Vault Viewer</title>
+<link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+
+<div class="viewer-layout" id="viewerLayout">
+
+  <!-- Header / Title Row -->
+  <div class="viewer-header" id="viewerHeader">
+    <div class="viewer-header-left">
+      <span class="viewer-filename" id="filename">No file loaded</span>
+      <span class="viewer-format-badge" id="formatBadge" style="display:none"></span>
+    </div>
+    <div class="viewer-header-meta" id="headerMeta"></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="viewer-toolbar" id="toolbar">
+    <div class="viewer-toolbar-center" id="toolbarCenter">
+      <!-- Populated dynamically based on file type -->
+    </div>
+    <div class="viewer-toolbar-right" id="toolbarRight">
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+
+  <!-- Animation Controls (3D only, hidden by default) -->
+  <div class="animation-controls" id="animationControls">
+    <button class="viewer-btn" id="btnPlayPause" title="Play/Pause"></button>
+    <select class="anim-select" id="animSelect"></select>
+    <input type="range" class="anim-timeline" id="animTimeline" min="0" max="100" value="0">
+    <span class="anim-time-label" id="animTimeLabel">0:00</span>
+  </div>
+
+  <!-- Main Content Area -->
+  <div style="display:flex; flex:1; overflow:hidden;">
+    <!-- Viewport -->
+    <div class="viewport" id="viewport">
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-icon" id="welcomeIcon"></div>
+        <div class="welcome-title">Media Vault</div>
+        <div class="welcome-subtitle">Select an asset from the sidebar, or browse all files.</div>
+        <button class="welcome-browse-btn" id="btnBrowseAll">Browse All Assets</button>
+      </div>
+
+      <!-- Image container (hidden until image loaded) -->
+      <div class="image-container" id="imageContainer" style="display:none"></div>
+
+      <!-- Stats overlay (3D) -->
+      <div class="stats-overlay" id="statsOverlay"></div>
+    </div>
+
+    <!-- Metadata Panel (toggled) -->
+    <div class="metadata-panel visible" id="metadataPanel"></div>
+  </div>
+</div>
+
+<script src="core.js"></script>
+<script src="lib/three.min.js"></script>
+<script src="lib/fflate.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script src="lib/FBXLoader.js"></script>
+<script src="lib/OBJLoader.js"></script>
+<script src="lib/GLTFLoader.js"></script>
+<script src="viewer.js"></script>
+</body>
+</html>

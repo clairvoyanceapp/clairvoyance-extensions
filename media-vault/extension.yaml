@@ -1,0 +1,98 @@
+schemaVersion: 1
+
+metadata:
+  id: media-vault
+  name: Media Vault
+  description: Browse, preview, and inspect creative assets — 3D models, textures, images, and binary art files. Anchorpoint-inspired grid browsing with best-in-class viewers.
+  createdInWorkspaceId: null
+  createdInWorkspaceName: null
+  createdByStaffId: null
+  createdByStaffName: null
+  createdAt: 1742918400000
+  updatedAt: 1743091200000
+  tags: [assets, 3d, textures, images, viewer, creative]
+  thumbnail: null
+  color: null
+  icon: null
+  isFavorite: false
+
+extension:
+  type: clairvoyance-extension
+  version: 0.5.0
+  minClairvoyanceVersion: 0.58.0
+  api:
+    minVersion: "1.0"
+    testedVersion: "1.0"
+
+  contributes:
+    commandBar:
+      title: Media Vault
+      icon: icon.svg
+    sidebar:
+      entrypoint: sidebar.html
+    tabs:
+      - id: viewer
+        title: Media Vault Viewer
+        entrypoint: viewer.html
+        singleton: false
+
+  author:
+    name: Clairvoyance
+  license: MIT
+
+  permissions:
+    - app.read
+    - extension.storage
+    - ui.sidebar.open
+    - ui.notify
+    - tabs.open
+    - workspace.read
+    - workspace.switch
+    - workspace.listFiles
+    - workspace.readBinaryFile
+
+  settings:
+    - id: defaultView
+      type: select
+      label: Default Browse View
+      default: list
+      options:
+        - value: list
+          label: List
+        - value: grid
+          label: Grid
+    - id: thumbnailSize
+      type: number
+      label: Grid Thumbnail Size (px)
+      default: 128
+      min: 64
+      max: 256
+
+staffKnowledge:
+  markdown: |
+    ## Media Vault
+
+    A creative asset browser and viewer for workspaces containing 3D models, textures, and images.
+
+    ### When to Use
+    - User asks to "browse assets", "view textures", "preview models", or "inspect images"
+    - User mentions FBX, DDS, TGA, OBJ, GLTF, or other art file formats
+    - User wants to see what image/model/texture files are in their workspace
+
+    ### Staff Actions
+    - Open Media Vault from the command bar to browse workspace assets
+    - Click any asset in the sidebar to open it in the viewer tab
+    - Use grid view for visual browsing, list view for detailed file trees
+    - Filter by asset type: 3D Models, Textures, Images, or All Assets
+
+    ### Supported Formats
+    - **3D Models**: .fbx, .obj, .gltf, .glb
+    - **Textures**: .dds, .tga, .hdr, .exr
+    - **Images**: .png, .jpg, .jpeg, .bmp, .svg, .webp, .gif, .psd
+
+    ### Examples
+    User: "Show me the textures in this project"
+    Staff: Opens Media Vault, sets filter to Textures.
+
+    User: "Preview that FBX model"
+    Staff: Opens Media Vault, navigates to the FBX file, clicks to open viewer.
